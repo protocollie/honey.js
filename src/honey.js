@@ -121,7 +121,7 @@
 				parentSharedDependencies = dependency.resolve(externalDependencies);
 
 				// If we have any, then make sure they're not already in the list and add them.
-				for (j = 0; j < parentSharedDependencies.length; j++) {
+				for (j = 0; j < parentSharedDependencies.length; j += 1) {
 					dependency = parentSharedDependencies[j];
 					if (sharedDependencies.indexOf(dependency) < 0) { 
 						sharedDependencies.push(dependency);
@@ -166,10 +166,71 @@
 		return exported;
 	}
 
+	// A honey binding context
+	function bindingContext(model, root) {
+		function bind() {
+			var elements = root.getElementsByTagName('*'),
+				i, element, bindings, binding;
+
+			// Filter out only the items that are databound.
+			bindings = findDataboundElements(elements);
+
+			// Actually bind all the elements that need binding.
+			for (i = 0; i < bindings.length; i += 1) {
+				(function(binding) {
+					// TODO: Multiple binding types.
+					var value = findInModel(binding.binding);
+
+					// Update the binding NOW.
+					binding.element.innerText = value();
+
+					// Update it in the future, too.
+					value.subscribe(function(newValue) {
+						binding.element.innerText = value();
+					});
+				})(bindings[i]);
+			}
+		}
+
+		function findDataboundElements(elements) {
+			var boundElements = [], binding;
+
+			for (i = 0; i < elements.length; i += 1) {
+				binding = elements[i].getAttribute('data-bind');
+				if (binding !== null) {
+					boundElements.push({
+						element: elements[i],
+						binding: binding
+					});
+				}
+			}
+
+			return boundElements;
+		}
+
+		function findInModel(fullPath) {
+			var pathParts = fullPath.split('.').reverse(),
+				current = model;
+
+			while(pathParts.length > 0) {
+				current = current[pathParts.pop()];
+			}
+
+			return current;
+		}
+
+		// Handle the initial binding
+		bind();
+	}
+
 	// Actually perform the data bind
 	// If elementId is null then we bind the whole page.
 	function bind(model, elementId) {
-		
+		// Find the root element of the binding context. Otherwise, bind the whole damn page.
+		var root = elementId !== undefined ? document.getElementById('elementId') : document.getElementsByTagName('html')[0];
+
+		// Create a binding context and wire up the page.
+		return new bindingContext(model, root);
 	}
 
 	// Time to do some exports

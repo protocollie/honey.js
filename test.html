@@ -3,15 +3,15 @@
 		<title>pooh bear got nothin on me.</title>
 	</head>
 	<body>
-		<div data-bind="text: Data"></div>
+		<div data-bind="data"></div>
+		<div data-bind="depends"></div>
+		<div data-bind="nested.superDependent"></div>
 		
 		<script type="text/javascript" src="src/honey.js"></script>
 		<script type="text/javascript">
 			var data = new honey.observable('this is test data'); 
 			var depends = new honey.observable(function(oldValue) {
-				var output = oldValue === undefined ? '' : oldValue + ' ';
-				output += data();
-				return output;
+				return 'value of data: ' + data();
 			});
 			var superDependent = new honey.observable(function(oldValue) {
 				console.warn('super mutated');
@@ -25,16 +25,18 @@
 			var model = {
 				data: data,
 				depends: depends,
-				superDependent: superDependent
+				nested: {
+					superDependent: superDependent
+				}
 			};
 
 			honey.bind(model);
 
-			console.log(model.data());
-			model.data('another test');
-			console.log(model.data());
-			console.log(model.depends());
-			console.log(model.superDependent());
+			data('test');
+
+			setTimeout(function() {
+				data('house hat donkey');
+			}, 3000);
 		</script>
 	</body>
 </html>
