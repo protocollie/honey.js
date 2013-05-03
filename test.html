@@ -1,0 +1,40 @@
+<html>
+	<head>
+		<title>pooh bear got nothin on me.</title>
+	</head>
+	<body>
+		<div data-bind="text: Data"></div>
+		
+		<script type="text/javascript" src="src/honey.js"></script>
+		<script type="text/javascript">
+			var data = new honey.observable('this is test data'); 
+			var depends = new honey.observable(function(oldValue) {
+				var output = oldValue === undefined ? '' : oldValue + ' ';
+				output += data();
+				return output;
+			});
+			var superDependent = new honey.observable(function(oldValue) {
+				console.warn('super mutated');
+				return depends() + ' is the current value of the dependent and ' + data() + ' is the value of data.';
+			});
+			var ultra = new honey.observable(function(oldValue) {
+				console.warn('ultra mutated');
+				return superDependent() + data() + depends();
+			});
+
+			var model = {
+				data: data,
+				depends: depends,
+				superDependent: superDependent
+			};
+
+			honey.bind(model);
+
+			console.log(model.data());
+			model.data('another test');
+			console.log(model.data());
+			console.log(model.depends());
+			console.log(model.superDependent());
+		</script>
+	</body>
+</html>
