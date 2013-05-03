@@ -168,31 +168,22 @@
 
 	// A honey binding context
 	function bindingContext(model, root) {
+		var bindingCache = [];
+
 		function bind() {
 			var elements = root.getElementsByTagName('*'),
-				i, element, bindings, binding;
+				i, element, bindings;
 
 			// Filter out only the items that are databound.
-			bindings = findDataboundElements(elements);
+			bindings = findBindings(elements);
 
 			// Actually bind all the elements that need binding.
 			for (i = 0; i < bindings.length; i += 1) {
-				(function(binding) {
-					// TODO: Multiple binding types.
-					var value = findInModel(binding.binding);
-
-					// Update the binding NOW.
-					binding.element.innerText = value();
-
-					// Update it in the future, too.
-					value.subscribe(function(newValue) {
-						binding.element.innerText = value();
-					});
-				})(bindings[i]);
+				bindingCache.push(new binding(bindings[i]));
 			}
 		}
 
-		function findDataboundElements(elements) {
+		function findBindings(elements) {
 			var boundElements = [], binding;
 
 			for (i = 0; i < elements.length; i += 1) {
@@ -200,7 +191,8 @@
 				if (binding !== null) {
 					boundElements.push({
 						element: elements[i],
-						binding: binding
+						binding: binding,
+						model: model
 					});
 				}
 			}
@@ -208,9 +200,26 @@
 			return boundElements;
 		}
 
+		// Handle the initial binding
+		bind();
+	}
+
+	// One single binding and all its associated data.
+	function binding(binding) {
+		// TODO: Multiple binding types.
+		var value = findInModel(binding.binding);
+
+		// Update the binding NOW.
+		binding.element.innerText = value();
+
+		// Update it in the future, too.
+		value.subscribe(function(newValue) {
+			binding.element.innerText = value();
+		});
+
 		function findInModel(fullPath) {
 			var pathParts = fullPath.split('.').reverse(),
-				current = model;
+				current = binding.model;
 
 			while(pathParts.length > 0) {
 				current = current[pathParts.pop()];
@@ -218,9 +227,6 @@
 
 			return current;
 		}
-
-		// Handle the initial binding
-		bind();
 	}
 
 	// Actually perform the data bind
