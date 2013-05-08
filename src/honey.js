@@ -300,12 +300,14 @@
 			observable = binding.observable;
 
 		function updateInput() {
-			element.value = binding.observable.formatted();
+			element.value = observable.hasOwnProperty('formatted') ? observable.formatted() : observable();
 		}
 
 		function mutateObservable() {
 			observable(element.value, true);
-			element.value = binding.observable.formatted();
+			if (observable.hasOwnProperty('formatted')) {
+				element.value = binding.observable.formatted();
+			}
 		}
 
 		// Subscribe to events and observable updates
