@@ -1,9 +1,11 @@
 (function() {
 	var calculatingDependencies = false,
-		queriedObservables;
+		queriedObservables,
+		handlers = {},
+		formatters = {};
 
 	// A honey observable.
-	function observable(value) {
+	function observable(value, format) {
 		var cachedValue,
 			me = this,
 			mutator,
@@ -69,11 +71,19 @@
 			cachedValue = value;
 		}
 
-		function mutate(value) {
+		function mutate(value, formatted) {
 			var subscriber, i;
+
+			if (format && formatted) {
+				value = getSanitized(value);
+			}
 
 			if (isDependent()) {
 				value = mutator(cachedValue);
+			}
+
+			if (cachedValue === value) {
+				return;
 			}
 
 			// Update the cached value
@@ -144,9 +154,17 @@
 			}
 		}
 
-		exported = function(value) {
+		function getFormatted() {
+			return formatters[format].formatter(cachedValue);
+		};
+
+		function getSanitized(value) {
+			return formatters[format].sanitizer(value);
+		}
+
+		exported = function(value, formatted) {
 			if (value !== undefined) {
-				mutate(value);
+				mutate(value, formatted);
 			} else {
 				return query();
 			}
@@ -155,6 +173,14 @@
 		exported.resolve = resolve;
 		exported.subscribe = subscribe;
 		exported.unsubscribe = unsubscribe;
+
+		// Do we have a formatter?
+		if (format) {
+			if (format && (typeof formatters[format] !== 'object' || typeof formatters[format].formatter !== 'function' || typeof formatters[format].sanitizer !== 'function')) {
+				throw 'Unknown format, or formatter does not implement a formatter and a sanitizer!';
+			}
+			exported.formatted = getFormatted;
+		}
 
 		// Set up our observable
 		if (typeof value === 'function') {
@@ -172,14 +198,27 @@
 
 		function bind() {
 			var elements = root.getElementsByTagName('*'),
-				i, element, bindings;
+				i, j, element, boundElements, bindings, bindingParts, handler;
 
 			// Filter out only the items that are databound.
-			bindings = findBindings(elements);
+			boundElements = findBindings(elements);
 
 			// Actually bind all the elements that need binding.
-			for (i = 0; i < bindings.length; i += 1) {
-				bindingCache.push(new binding(bindings[i]));
+			for (i = 0; i < boundElements.length; i += 1) {
+				// Break up the binding string into individual bindings.
+				bindings = boundElements[i].binding.split(',');
+
+				// Let's create all the bindings
+				for (j = 0; j < bindings.length; j++) {
+					bindingParts = bindings[j].split(':');
+
+					// Create the correct binding handler
+					handler = new handlers[bindingParts[0].trim()]({
+						element: boundElements[i].element,
+						observable: findInModel(bindingParts[1].trim())
+					});
+					bindingCache.push(handler);
+				}
 			}
 		}
 
@@ -200,26 +239,9 @@
 			return boundElements;
 		}
 
-		// Handle the initial binding
-		bind();
-	}
-
-	// One single binding and all its associated data.
-	function binding(binding) {
-		// TODO: Multiple binding types.
-		var value = findInModel(binding.binding);
-
-		// Update the binding NOW.
-		binding.element.innerText = value();
-
-		// Update it in the future, too.
-		value.subscribe(function(newValue) {
-			binding.element.innerText = value();
-		});
-
 		function findInModel(fullPath) {
 			var pathParts = fullPath.split('.').reverse(),
-				current = binding.model;
+				current = model;
 
 			while(pathParts.length > 0) {
 				current = current[pathParts.pop()];
@@ -227,6 +249,9 @@
 
 			return current;
 		}
+
+		// Handle the initial binding
+		bind();
 	}
 
 	// Actually perform the data bind
@@ -242,6 +267,60 @@
 	// Time to do some exports
 	window.honey = {
 		observable: observable,
-		bind: bind
+		bind: bind,
+		handlers: handlers,
+		formatters: formatters
 	};
 })();
+
+// Text binding
+(function(honey) {
+	honey.handlers['text'] = function(binding) {
+		function update() {
+			if(binding.observable.hasOwnProperty('formatted')) {
+				binding.element.innerText = binding.observable.formatted();
+			} else {
+				binding.element.innerText = binding.observable();
+			}
+		}
+
+		// Subscribe to the observable
+		binding.observable.subscribe(update);
+
+		// Perform initial binding
+		update();
+	};
+})(window.honey);
+
+// Value binding
+(function(honey) {
+	// TODO: Handle all input types correctly.
+	honey.handlers['value'] = function(binding) {
+		var element = binding.element,
+			observable = binding.observable;
+
+		function updateInput() {
+			element.value = binding.observable.formatted();
+		}
+
+		function mutateObservable() {
+			observable(element.value, true);
+			element.value = binding.observable.formatted();
+		}
+
+		// Subscribe to events and observable updates
+		observable.subscribe(updateInput);
+		element.addEventListener('change', mutateObservable, false);
+
+		// Perform initial binding
+		updateInput();
+	};
+})(window.honey);
+
+// Money Formatter
+(function(honey) {
+	honey.formatters['money'] = { 
+		formatter: function(value) { return '$' + value; },
+		sanitizer: function(value) { return parseInt(value.replace(/\$/, '')); }
+	};
+})(window.honey);

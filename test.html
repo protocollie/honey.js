@@ -3,40 +3,40 @@
 		<title>pooh bear got nothin on me.</title>
 	</head>
 	<body>
-		<div data-bind="data"></div>
-		<div data-bind="depends"></div>
-		<div data-bind="nested.superDependent"></div>
-		
+		<h1>Honey Money Calculator</h1>
+		<table>
+			<tr>
+				<td>Add</td>
+				<td><input name="value-a" data-bind="value: A" /></td>
+			</tr>
+			<tr>
+				<td>And</td>
+				<td><input name="value-b" data-bind="value: B" /></td>
+			</tr>
+			<tr style="text-align: center;">
+				<td colspan="2">
+					<span data-bind="text: Total"></span>
+				</td>
+			</tr>
+		</table>
 		<script type="text/javascript" src="src/honey.js"></script>
 		<script type="text/javascript">
-			var data = new honey.observable('this is test data'); 
-			var depends = new honey.observable(function(oldValue) {
-				return 'value of data: ' + data();
-			});
-			var superDependent = new honey.observable(function(oldValue) {
-				console.warn('super mutated');
-				return depends() + ' is the current value of the dependent and ' + data() + ' is the value of data.';
-			});
-			var ultra = new honey.observable(function(oldValue) {
-				console.warn('ultra mutated');
-				return superDependent() + data() + depends();
+			
+			var a = new honey.observable(10, 'money');
+			var b = new honey.observable(15, 'money');
+			
+			var total = new honey.observable(function() {
+				var total = a() + b();
+				return '$' + total;
 			});
 
 			var model = {
-				data: data,
-				depends: depends,
-				nested: {
-					superDependent: superDependent
-				}
+				A: a,
+				B: b,
+				Total: total
 			};
 
 			honey.bind(model);
-
-			data('test');
-
-			setTimeout(function() {
-				data('house hat donkey');
-			}, 3000);
 		</script>
 	</body>
 </html>
