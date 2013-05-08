@@ -34,7 +34,7 @@
 			calculatingDependencies = false;
 
 			// Subscribe to all our dependencies.
-			for (i = 0; i < queriedObservables.length; i += 1) {
+			for (i = 0; i < queriedObservables.length; i++) {
 				dependency = queriedObservables[i];
 
 				// First, let's resolve if this dependency lets us eliminate any other dependencies further up the chain.
@@ -42,7 +42,7 @@
 
 				// We don't need to subscribe to any of the dependencies of this dependency.
 				if (parentDependencies.length > 0) {
-					for (j = 0; j < parentDependencies.length; j += 1) {
+					for (j = 0; j < parentDependencies.length; j++) {
 						parentDependency = parentDependencies[j];
 
 						// First check if we already have a dependency on this value.
@@ -96,7 +96,7 @@
 			}
 
 			// LET. THEM. KNOW.
-			for(i = 0; i < subscribers.length; i += 1) {
+			for(i = 0; i < subscribers.length; i++) {
 				subscriber = subscribers[i];
 				subscriber(cachedValue);
 			}
@@ -119,7 +119,7 @@
 				parentSharedDependencies;
 
 			// Look through each of our dependencies...
-			for (i = 0; i < dependencies.length; i += 1) {
+			for (i = 0; i < dependencies.length; i++) {
 				dependency = dependencies[i];
 
 				// See if this dependency is a shared dependency.
@@ -131,7 +131,7 @@
 				parentSharedDependencies = dependency.resolve(externalDependencies);
 
 				// If we have any, then make sure they're not already in the list and add them.
-				for (j = 0; j < parentSharedDependencies.length; j += 1) {
+				for (j = 0; j < parentSharedDependencies.length; j++) {
 					dependency = parentSharedDependencies[j];
 					if (sharedDependencies.indexOf(dependency) < 0) { 
 						sharedDependencies.push(dependency);
@@ -208,7 +208,7 @@
 			boundElements = findBindings(elements);
 
 			// Actually bind all the elements that need binding.
-			for (i = 0; i < boundElements.length; i += 1) {
+			for (i = 0; i < boundElements.length; i++) {
 				// Break up the binding string into individual bindings.
 				bindings = boundElements[i].binding.split(',');
 
@@ -229,7 +229,7 @@
 		function findBindings(elements) {
 			var boundElements = [], binding;
 
-			for (i = 0; i < elements.length; i += 1) {
+			for (i = 0; i < elements.length; i++) {
 				binding = elements[i].getAttribute('data-bind');
 				if (binding !== null) {
 					boundElements.push({
