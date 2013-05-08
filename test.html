@@ -19,12 +19,13 @@
 				</td>
 			</tr>
 		</table>
+		<div id="model-output"></div>
 		<script type="text/javascript" src="src/honey.js"></script>
 		<script type="text/javascript">
 			
 			var a = new honey.observable(10, 'money');
 			var b = new honey.observable(15, 'money');
-			
+
 			var total = new honey.observable(function() {
 				var total = a() + b();
 				return '$' + total;
@@ -35,6 +36,12 @@
 				B: b,
 				Total: total
 			};
+
+			total.subscribe(function() {
+				var packed = honey.pack(model);
+				document.getElementById('model-output').innerText = JSON.stringify(packed);
+				honey.unpack(packed, model);
+			});
 
 			honey.bind(model);
 		</script>

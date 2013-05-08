@@ -156,7 +156,7 @@
 
 		function getFormatted() {
 			return formatters[format].formatter(cachedValue);
-		};
+		}
 
 		function getSanitized(value) {
 			return formatters[format].sanitizer(value);
@@ -173,6 +173,10 @@
 		exported.resolve = resolve;
 		exported.subscribe = subscribe;
 		exported.unsubscribe = unsubscribe;
+		exported.isDependent = isDependent;
+
+		// Mark it as an observable
+		exported.observable = true;
 
 		// Do we have a formatter?
 		if (format) {
@@ -254,6 +258,45 @@
 		bind();
 	}
 
+	function pack(model) {
+		var packedModel = {},
+			property;
+
+		for (property in model) {
+			if (model.hasOwnProperty(property)) {
+				if(model[property].observable) {
+					packedModel[property] = model[property]();
+				} else if (typeof model[property] === 'object') {
+					packedModel[property] === pack(model[property]);
+				} else {
+					packedModel[property] === model[property];
+				}
+			}
+		}
+
+		return packedModel;
+	}
+
+	function unpack(model, target) {
+		target = target ? target : {};
+
+		for (property in model) {
+			if (model.hasOwnProperty(property)) {
+				if (typeof model[property] === 'object') {
+					target[property] = unpack(model[property], target[property]);
+				}
+				else if (target.hasOwnProperty(property) && target[property].observable) {
+					target[property](model[property]);
+				}
+				else {
+					target[property] = new observable(model[property]);
+				}
+			}
+		}
+
+		return target;
+	}
+
 	// Actually perform the data bind
 	// If elementId is null then we bind the whole page.
 	function bind(model, elementId) {
@@ -269,7 +312,9 @@
 		observable: observable,
 		bind: bind,
 		handlers: handlers,
-		formatters: formatters
+		formatters: formatters,
+		pack: pack,
+		unpack: unpack
 	};
 })();
 
